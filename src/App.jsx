@@ -1,13 +1,29 @@
 import React, { useState } from 'react';
 import { Search, Building2, User, Calendar, AlertCircle, Loader2, MapPin } from 'lucide-react';
 
+const ENCODED_URL_BASE = 'aHR0cHM6Ly9zcmllbmxpbmVhLnNyaS5nb2IuZWMvbW92aWwtc2VydmljaW9zL2FwaS92MS4wL2RldWRhcy9wb3JEZW5vbWluYWNpb24v';
+
+/**
+ * Decodifica una cadena Base64.
+ * @param {string} encodedString - La cadena Base64.
+ * @returns {string} La cadena decodificada.
+ */
+const decodeBase64 = (encodedString) => {
+  try {
+    // atob() para decodificar la cadena Base64
+    return atob(encodedString);
+  } catch (e) {
+    console.error("Error al decodificar Base64:", e);
+    return '';
+  }
+};
+
 export default function SRIConsulta() {
   const [nombres, setNombres] = useState('');
   const [apellidos, setApellidos] = useState('');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
 
   const handleSearch = async () => {
     if (!nombres.trim() || !apellidos.trim()) {
@@ -19,15 +35,17 @@ export default function SRIConsulta() {
     setLoading(true);
     setResults(null);
 
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const url = `${apiUrl}/sri?nombres=${encodeURIComponent(nombres.trim())}&apellidos=${encodeURIComponent(apellidos.trim())}`;
+    // 1. Decodificar la URL base en el momento de la ejecución
+    const URL_BASE = decodeBase64(ENCODED_URL_BASE);
+
+    // 2. Construir el resto de la URL con los parámetros
+    const denominacion = `${apellidos.trim().toUpperCase()}%20${nombres.trim().toUpperCase()}`.replace(/ /g, '%20');
+    
+    // 3. Concatenar la URL decodificada con los parámetros
+    const url = `${URL_BASE}${denominacion}/?tipoPersona=N&resultados=30`;
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 segundos
-      
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error('Error en la conexión con el servidor');
